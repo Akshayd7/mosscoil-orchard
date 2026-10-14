@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>MOSSCOIL ORCHARD</title>
+<style>
+  :root {
+    --bg-deep: #06100c;
+    --bg-mid: #0c1f17;
+    --moss-bright: #73e68c;
+    --moss-mid: #3a9658;
+    --moss-dark: #194d2c;
+    --gold: #ffd470;
+    --gold-dim: #b58932;
+    --crimson: #ff4d6d;
+    --amber: #ffaa33;
+    --dew: #5ce1e6;
+    --cream: #f4f7ec;
+    --ui-glass: rgba(10, 26, 19, 0.78);
+    --ui-border: rgba(115, 230, 140, 0.28);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    background-color: var(--bg-deep);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: var(--cream);
+    touch-action: none;
+  }
+
+  #app {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    background: radial-gradient(circle at 50% 42%, #133023 0%, #07130e 75%, #040a07 100%);
+    padding: env(safe-area-inset-top, 8px) env(safe-area-inset-right, 8px) env(safe-area-inset-bottom, 8px) env(safe-area-inset-left, 8px);
+  }
+
+  /* Ambient background foliage vignette */
+  #app::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    box-shadow: inset 0 0 70px rgba(2, 6, 4, 0.9);
+    z-index: 1;
+  }
+
+  /* Top HUD Bar */
+  .hud-header {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .stat-cluster {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--ui-glass);
+    border: 1px solid var(--ui-border);
+    border-radius: 14px;
+    padding: 5px 12px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .stat-box {
+    display: flex;
+    flex-direction: column;
+    min-width: 54px;
+  }
+
+  .stat-label {
+    font-size: 9px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--moss-bright);
+    opacity: 0.85;
+    font-weight: 700;
+  }
+
+  .stat-value {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--cream);
+    line-height: 1.1;
+    text-shadow: 0 0 10px rgba(115, 230, 140, 0.35);
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--ui-border);
+    margin: 0 4px;
+  }
+
+  /* Combo & Multiplier Pill */
+  .combo-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 212, 112, 0.12);
+    border: 1px solid rgba(255, 212, 112, 0.4);
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gold);
+    opacity: 0;
+    transform: scale(0.85);
+    transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .combo-pill.active {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .hud-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .icon-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid var(--ui-border);
+    background: var(--ui-glass);
+    color: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    transition: transform 0.12s ease, border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .icon-btn:active {
+    transform: scale(0.92);
+    border-color: var(--gold);
+    background: rgba(25, 65, 42, 0.9);
+  }
+
+  .icon-btn svg {
+    width: 19px;
+    height: 19px;
+    fill: currentColor;
+  }
+
+  /* Center Stage / Canvas Container */
+  .stage-wrap {
+    position: relative;
+    z-index: 5;
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 500px;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+  }
+
+  #gameCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(115, 230, 140, 0.22);
+    background: #081610;
+  }
+
+  /* Bottom Thumb Controls */
+  .controls-Dock {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 12px 6px;
+    flex-shrink: 0;
+    gap: 10px;
+  }
+
+  .legend-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: var(--ui-glass);
+    border: 1px solid var(--ui-border);
+    border-radius: 14px;
+    padding: 7px 10px;
+    font-size: 11px;
+    max-width: 145px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(244, 247, 236, 0.85);
+    white-space: nowrap;
+  }
+
+  .berry-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot-crimson { background: var(--crimson); box-shadow: 0 0 6px var(--crimson); }
+  .dot-amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .dot-dew { background: var(--dew); box-shadow: 0 0 6px var(--dew); }
+
+  /* Botanical Rose D-Pad */
+  .dpad-rose {
+    position: relative;
+    width: 144px;
+    height: 144px;
+    flex-shrink: 0;
+  }
+
+  .dpad-btn {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+    border: 1px solid rgba(115, 230, 140, 0.35);
+    background: linear-gradient(145deg, rgba(22, 56, 38, 0.92), rgba(10, 27, 19, 0.92));
+    color: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    transition: transform 0.08s ease, background 0.12s ease, border-color 0.12s ease;
+  }
+
+  .dpad-btn.pressed, .dpad-btn:active {
+    background: linear-gradient(145deg, rgba(58, 150, 88, 0.95), rgba(25, 77, 44, 0.95));
+    border-color: var(--gold);
+    color: var(--gold);
+    transform: scale(0.92);
+    box-shadow: 0 0 15px rgba(115, 230, 140, 0.4);
+  }
+
+  .dpad-btn svg {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+  }
+
+  .dpad-up    { top: 0; left: 48px; }
+  .dpad-down  { bottom: 0; left: 48px; }
+  .dpad-left  { top: 48px; left: 0; }
+  .dpad-right { top: 48px; right: 0; }
+
+  .dpad-center {
+    position: absolute;
+    top: 52px;
+    left: 52px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px dashed rgba(115, 230, 140, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .dpad-center::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(115, 230, 140, 0.35);
+    box-shadow: 0 0 8px rgba(115, 230, 140, 0.5);
+  }
+
+  .hint-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 5px;
+    font-size: 11px;
+    color: rgba(244, 247, 236, 0.65);
+    text-align: right;
+    max-width: 95px;
+  }
+
+  .key-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 10px;
+    color: var(--moss-bright);
+    font-weight: 600;
+  }
+
+  /* Modal Overlays (Title, Pause, Game Over) */
+  .overlay-modal {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(4, 11, 8, 0.72);
+    backdrop-filter: blur(6px);
+    opacity: 1;
+    transition: opacity 0.28s ease;
+  }
+
+  .overlay-modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .modal-card {
+    width: 100%;
+    max-width: 340px;
+    background: linear-gradient(165deg, rgba(16, 42, 29, 0.96) 0%, rgba(7, 19, 13, 0.98) 100%);
+    border: 1px solid rgba(115, 230, 140, 0.4);
+    border-radius: 24px;
+    padding: 24px 20px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .modal-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 50% 30%, rgba(115, 230, 140, 0.12), transparent 60%);
+    pointer-events: none;
+  }
+
+  .crest-svg {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 10px;
+    filter: drop-shadow(0 0 12px rgba(115, 230, 140, 0.45));
+  }
+
+  .modal-subtitle {
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 4px;
+    font-weight: 700;
+  }
+
+  .modal-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--cream);
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 12px rgba(115, 230, 140, 0.35);
+  }
+
+  .modal-desc {
+    font-size: 13px;
+    line-height: 1.45;
+    color: rgba(244, 247, 236, 0.8);
+    margin-bottom: 18px;
+  }
+
+  .score-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(115, 230, 140, 0.2);
+    border-radius: 14px;
+    padding: 12px;
+  }
+
+  .summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .summary-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--moss-bright);
+  }
+
+  .summary-val {
+    font-family: Georgia, serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold);
+  }
+
+  .cta-btn {
+    width: 100%;
+    padding: 13px 20px;
+    border-radius: 14px;
+    border: 1px solid var(--gold);
+    background: linear-gradient(135deg, #2d7a47 0%, #194d2c 100%);
+    color: var(--cream);
+    font-family: Georgia, serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(115, 230, 140, 0.25);
+    transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  }
+
+  .cta-btn:hover {
+    filter: brightness(1.1);
+  }
+
+  .cta-btn:active {
+    transform: scale(0.96);
+  }
+
+  /* Compact adjustments for tighter viewports */
+  @media (max-height: 740px) {
+    .dpad-rose {
+      width: 126px;
+      height: 126px;
+    }
+    .dpad-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+    }
+    .dpad-up    { top: 0; left: 42px; }
+    .dpad-down  { bottom: 0; left: 42px; }
+    .dpad-left  { top: 42px; left: 0; }
+    .dpad-right { top: 42px; right: 0; }
+    .dpad-center { top: 45px; left: 45px; width: 36px; height: 36px; }
+    .hud-header { padding: 4px 8px; }
+    .controls-Dock { padding: 2px 10px 4px; }
+  }
+
+  /* Keep the tall game stage proportional to the phone viewport. */
+  .stage-wrap { flex: 1 1 0; }
+  .controls-Dock { flex: 0 0 auto; }
+  @media (max-height: 900px) {
+    .controls-Dock { padding-top: 2px; padding-bottom: 2px; }
+    .dpad-rose { width: 108px; height: 108px; }
+    .dpad-btn { width: 36px; height: 36px; border-radius: 11px; }
+    .dpad-up { top: 0; left: 36px; }
+    .dpad-down { bottom: 0; left: 36px; }
+    .dpad-left { top: 36px; left: 0; }
+    .dpad-right { top: 36px; right: 0; }
+    .dpad-center { top: 38px; left: 38px; width: 32px; height: 32px; }
+    .legend-panel { padding: 5px 7px; gap: 3px; }
+    .hint-panel { font-size: 10px; gap: 3px; }
+  }
+
+  /* Compact phone HUD and thumb controls */
+  .combo-pill:not(.active) { display: none; }
+  @media (max-width: 430px) {
+    .hud-header { padding: 4px 3px; gap: 3px; }
+    .stat-cluster { gap: 3px; padding: 4px 6px; }
+    .stat-box { min-width: 40px; }
+    .stat-label { font-size: 8px; letter-spacing: 0.8px; }
+    .stat-value { font-size: 16px; }
+    .stat-divider { margin: 0 2px; }
+    .hud-actions { gap: 3px; }
+    .icon-btn { width: 34px; height: 34px; border-radius: 10px; }
+    .controls-Dock { gap: 4px; padding-left: 4px; padding-right: 4px; }
+    .legend-panel { max-width: 132px; padding: 6px 7px; gap: 3px; font-size: 10px; }
+    .dpad-rose { width: 126px; height: 126px; }
+    .dpad-btn { width: 42px; height: 42px; border-radius: 13px; }
+    .dpad-up { top: 0; left: 42px; }
+    .dpad-down { bottom: 0; left: 42px; }
+    .dpad-left { top: 42px; left: 0; }
+    .dpad-right { top: 42px; right: 0; }
+    .dpad-center { top: 45px; left: 45px; width: 36px; height: 36px; }
+    .hint-panel { max-width: 78px; font-size: 10px; gap: 4px; }
+  }
+
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- TOP HUD -->
+  <header class="hud-header">
+    <div class="stat-cluster">
+      <div class="stat-box">
+        <span class="stat-label">Harvest</span>
+        <span class="stat-value" id="scoreVal">0</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-box">
+        <span class="stat-label">Best</span>
+        <span class="stat-value" id="bestVal">0</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-box" style="min-width: 42px;">
+        <span class="stat-label">Coils</span>
+        <span class="stat-value" id="coilVal">4</span>
+      </div>
+    </div>
+
+    <div class="combo-pill" id="comboPill">
+      <span id="comboText">x2</span>
+    </div>
+
+    <div class="hud-actions">
+      <button class="icon-btn" id="muteBtn" aria-label="Toggle Audio" title="Toggle Audio (M)">
+        <svg id="soundOnIcon" viewBox="0 0 24 24">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
+        <svg id="soundOffIcon" viewBox="0 0 24 24" style="display:none;">
+          <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="pauseBtn" aria-label="Pause Game" title="Pause Game (Space)">
+        <svg id="pauseIcon" viewBox="0 0 24 24">
+          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+        </svg>
+        <svg id="playIcon" viewBox="0 0 24 24" style="display:none;">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="restartTopBtn" aria-label="Restart Game" title="Restart Game (R)">
+        <svg viewBox="0 0 24 24">
+          <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- GAME STAGE -->
+  <main class="stage-wrap" id="stageWrap">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- START / PAUSE / GAME OVER MODAL -->
+    <div class="overlay-modal" id="modalOverlay">
+      <div class="modal-card">
+        <svg class="crest-svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="44" fill="none" stroke="#ffd470" stroke-width="2" stroke-dasharray="4 4" opacity="0.6"/>
+          <path d="M30 68 C 20 45, 45 20, 68 32 C 85 40, 75 72, 50 72 C 36 72, 34 54, 48 48 C 58 44, 62 54, 54 58" fill="none" stroke="#73e68c" stroke-width="8" stroke-linecap="round"/>
+          <circle cx="68" cy="32" r="5" fill="#ff4d6d"/>
+          <circle cx="50" cy="24" r="3.5" fill="#ffd470"/>
+        </svg>
+        <div class="modal-subtitle" id="modalSub">Enchanted Serpent Grove</div>
+        <h1 class="modal-title" id="modalTitle">Mosscoil Orchard</h1>
+        <p class="modal-desc" id="modalDesc">
+          Guide the ancient mossy serpent through the moonlit orchard. Gather luminous berries to lengthen your floral trail, and avoid tangling in your own coils or the boundary roots.
+        </p>
+
+        <div class="score-summary" id="modalSummary" style="display:none;">
+          <div class="summary-item">
+            <span class="summary-label">Harvest</span>
+            <span class="summary-val" id="finalScore">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Best Grove</span>
+            <span class="summary-val" id="finalBest">0</span>
+          </div>
+        </div>
+
+        <button class="cta-btn" id="modalCtaBtn">Awaken Serpent</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- BOTTOM THUMB CONTROLS -->
+  <footer class="controls-Dock">
+    <div class="legend-panel">
+      <div class="legend-item">
+        <span class="berry-dot dot-crimson"></span>
+        <span>Heartberry (+10)</span>
+      </div>
+      <div class="legend-item">
+        <span class="berry-dot dot-amber"></span>
+        <span>Sunburst (+30)</span>
+      </div>
+      <div class="legend-item">
+        <span class="berry-dot dot-dew"></span>
+        <span>Moon-Dew (Slow)</span>
+      </div>
+    </div>
+
+    <div class="dpad-rose" id="dpad">
+      <button class="dpad-btn dpad-up" data-dir="UP" aria-label="Turn Up">
+        <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+      </button>
+      <button class="dpad-btn dpad-left" data-dir="LEFT" aria-label="Turn Left">
+        <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+      </button>
+      <div class="dpad-center"></div>
+      <button class="dpad-btn dpad-right" data-dir="RIGHT" aria-label="Turn Right">
+        <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+      </button>
+      <button class="dpad-btn dpad-down" data-dir="DOWN" aria-label="Turn Down">
+        <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+      </button>
+    </div>
+
+    <div class="hint-panel">
+      <span>Swipe Canvas</span>
+      <span>or D-Pad</span>
+      <span><span class="key-badge">WASD</span> / <span class="key-badge">Arrows</span></span>
+    </div>
+  </footer>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* =========================================================================
+   * 1. SYNTHESIZED ENCHANTED AUDIO ENGINE (Web Audio API, Zero External Assets)
+   * ========================================================================= */
+  class OrchardAudio {
+    constructor() {
+      this.ctx = null;
+      this.muted = false;
+      this.isPlayingMusic = false;
+      this.stepIndex = 0;
+      this.nextNoteTime = 0;
+      this.schedulerTimer = null;
+
+      // D Dorian / Pentatonic Enchanted Harp Sequence (Hz)
+      // D4, F4, G4, A4, C5, D5, E5, F5, A5
+      this.melodyNotes = [
+        293.66, 349.23, 440.00, 392.00,
+        523.25, 440.00, 349.23, 329.63,
+        293.66, 392.00, 440.00, 587.33,
+        523.25, 440.00, 392.00, 349.23
+      ];
+      this.bassNotes = [146.83, 174.61, 196.00, 130.81]; // D3, F3, G3, C3
+    }
+
+    init() {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          this.ctx = new AudioCtx();
+        }
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+    }
+
+    toggleMute() {
+      this.init();
+      this.muted = !this.muted;
+      if (this.muted) {
+        this.stopMusic();
+      } else if (game.state === 'PLAYING') {
+        this.startMusic();
+      }
+      return this.muted;
+    }
+
+    startMusic() {
+      this.init();
+      if (!this.ctx || this.muted || this.isPlayingMusic) return;
+      this.isPlayingMusic = true;
+      this.nextNoteTime = this.ctx.currentTime + 0.08;
+      this.schedulerTimer = setInterval(() => this.scheduleStep(), 80);
+    }
+
+    stopMusic() {
+      this.isPlayingMusic = false;
+      if (this.schedulerTimer) {
+        clearInterval(this.schedulerTimer);
+        this.schedulerTimer = null;
+      }
+    }
+
+    scheduleStep() {
+      if (!this.isPlayingMusic || !this.ctx || this.muted) return;
+      const stepDuration = 0.28; // ~107 BPM eighth notes
+      while (this.nextNoteTime < this.ctx.currentTime + 0.2) {
+        this.playSequenceStep(this.stepIndex, this.nextNoteTime);
+        this.nextNoteTime += stepDuration;
+        this.stepIndex = (this.stepIndex + 1) % 16;
+      }
+    }
+
+    playSequenceStep(step, time) {
+      // Plucked harp melody
+      const freq = this.melodyNotes[step];
+      if (freq && step % 2 === 0) {
+        this.playTone(freq, time, 0.45, 'triangle', 0.045);
+      } else if (freq && Math.random() < 0.65) {
+        this.playTone(freq * 1.5, time, 0.25, 'sine', 0.025);
+      }
+
+      // Warm Pad Bass every 4 steps
+      if (step % 4 === 0) {
+        const bassFreq = this.bassNotes[(step / 4) % this.bassNotes.length];
+        this.playTone(bassFreq, time, 1.05, 'sine', 0.055);
+      }
+    }
+
+    playTone(freq, startTime, duration, type = 'sine', peakGain = 0.06) {
+      if (!this.ctx || this.muted) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      gain.gain.setValueAtTime(0.0001, startTime);
+      gain.gain.linearRampToValueAtTime(peakGain, startTime + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration + 0.02);
+    }
+
+    sfxTurn() {
+      if (!this.ctx || this.muted) return;
+      const now = this.ctx.currentTime;
+      this.playTone(240, now, 0.06, 'sine', 0.025);
+    }
+
+    sfxEatCrimson(combo = 1) {
+      if (!this.ctx || this.muted) return;
+      const now = this.ctx.currentTime;
+      const root = 523.25 * Math.pow(1.05946, Math.min(combo, 8));
+      this.playTone(root, now, 0.16, 'triangle', 0.08);
+      this.playTone(root * 1.25, now + 0.055, 0.24, 'sine', 0.07);
+    }
+
+    sfxEatGold() {
+      if (!this.ctx || this.muted) return;
+      const now = this.ctx.currentTime;
+      [587.33, 739.99, 880.00, 1174.66].forEach((f, i) => {
+        this.playTone(f, now + i * 0.05, 0.28, 'triangle', 0.085);
+      });
+    }
+
+    sfxEatDew() {
+      if (!this.ctx || this.muted) return;
+      const now = this.ctx.currentTime;
+      [880.00, 659.25, 523.25].forEach((f, i) => {
+        this.playTone(f, now + i * 0.06, 0.32, 'sine', 0.075);
+      });
+    }
+
+    sfxGameOver() {
+      if (!this.ctx || this.muted) return;
+      const now = this.ctx.currentTime;
+      [349.23, 329.63, 293.66, 220.00].forEach((f, i) => {
+        this.playTone(f, now + i * 0.12, 0.4, 'sawtooth', 0.045);
+      });
+    }
+  }
+
+  /* =========================================================================
+   * 2. ORCHARD GAME ENGINE & STATE
+   * ========================================================================= */
+  const GRID_COLS = 15;
+  const GRID_ROWS = 19;
+
+  const DIRS = {
+    UP:    { x: 0,  y: -1, name: 'UP' },
+    DOWN:  { x: 0,  y: 1,  name: 'DOWN' },
+    LEFT:  { x: -1, y: 0,  name: 'LEFT' },
+    RIGHT: { x: 1,  y: 0,  name: 'RIGHT' }
+  };
+
+  const audio = new OrchardAudio();
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const stageWrap = document.getElementById('stageWrap');
+
+  // UI Elements
+  const scoreValEl = document.getElementById('scoreVal');
+  const bestValEl = document.getElementById('bestVal');
+  const coilValEl = document.getElementById('coilVal');
+  const comboPillEl = document.getElementById('comboPill');
+  const comboTextEl = document.getElementById('comboText');
+
+  const modalOverlay = document.getElementById('modalOverlay');
+  const modalSub = document.getElementById('modalSub');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalDesc = document.getElementById('modalDesc');
+  const modalSummary = document.getElementById('modalSummary');
+  const finalScoreEl = document.getElementById('finalScore');
+  const finalBestEl = document.getElementById('finalBest');
+  const modalCtaBtn = document.getElementById('modalCtaBtn');
+
+  const muteBtn = document.getElementById('muteBtn');
+  const soundOnIcon = document.getElementById('soundOnIcon');
+  const soundOffIcon = document.getElementById('soundOffIcon');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const pauseIcon = document.getElementById('pauseIcon');
+  const playIcon = document.getElementById('playIcon');
+  const restartTopBtn = document.getElementById('restartTopBtn');
+
+  // Persistent High Score
+  let bestScore = 0;
+  try {
+    bestScore = parseInt(localStorage.getItem('mosscoil_best_v1') || '0', 10) || 0;
+  } catch (e) {
+    bestScore = 0;
+  }
+  bestValEl.textContent = bestScore;
+
+  // Offscreen static board cache for 60fps performance
+  const bgBuffer = document.createElement('canvas');
+  const bgCtx = bgBuffer.getContext('2d');
+
+  const game = {
+    state: 'START', // START, PLAYING, PAUSED, GAMEOVER
+    score: 0,
+    combo: 1,
+    comboTimer: 0,
+    slowTimer: 0,
+    shakeTime: 0,
+    shakeIntensity: 0,
+
+    // Snake representation:
+    // segments[0] is head, segments[length-1] is tail
+    segments: [],
+    prevSegments: [],
+    dir: DIRS.RIGHT,
+    inputQueue: [],
+    growPending: 0,
+
+    // Movement timing
+    stepProgress: 0,
+    baseInterval: 0.145, // seconds per tile
+
+    // Berries & Collectibles
+    crimsonBerry: { x: 10, y: 9, pulse: 0 },
+    specialBerry: null, // { x, y, type: 'AMBER'|'DEW', timer, maxTimer }
+
+    // Visual Ambient & FX Pools
+    particles: [],
+    floatingTexts: [],
+    fireflies: [],
+    canopyLeaves: [],
+
+    // Layout Metrics (CSS pixels)
+    viewW: 300,
+    viewH: 400,
+    dpr: 1,
+    cellSize: 20,
+    boardX: 10,
+    boardY: 10,
+    boardW: 280,
+    boardH: 380
+  };
+
+  /* =========================================================================
+   * 3. AMBIENT ENTITIES & VISUAL INITIALIZATION
+   * ========================================================================= */
+  function initAmbientEntities() {
+    game.fireflies = [];
+    for (let i = 0; i < 22; i++) {
+      game.fireflies.push({
+        x: Math.random(),
+        y: Math.random(),
+        vx: (Math.random() - 0.5) * 0.03,
+        vy: (Math.random() - 0.5) * 0.03,
+        phase: Math.random() * Math.PI * 2,
+        speed: 1.5 + Math.random() * 2.5,
+        radius: 1.5 + Math.random() * 2.2
+      });
+    }
+
+    // Corner canopy clusters
+    game.canopyLeaves = [
+      { corner: 0, phase: 0.2 },
+      { corner: 1, phase: 1.4 },
+      { corner: 2, phase: 2.8 },
+      { corner: 3, phase: 4.1 }
+    ];
+  }
+
+  function resetGameData() {
+    game.score = 0;
+    game.combo = 1;
+    game.comboTimer = 0;
+    game.slowTimer = 0;
+    game.shakeTime = 0;
+    game.stepProgress = 0;
+    game.inputQueue = [];
+    game.growPending = 0;
+    game.particles = [];
+    game.floatingTexts = [];
+    game.specialBerry = null;
+
+    const startX = 6;
+    const startY = 9;
+    game.segments = [
+      { x: startX,     y: startY,     flowerHue: 0 },
+      { x: startX - 1, y: startY,     flowerHue: 340 },
+      { x: startX - 2, y: startY,     flowerHue: 45 },
+      { x: startX - 3, y: startY,     flowerHue: 185 }
+    ];
+    game.prevSegments = game.segments.map(s => ({ ...s }));
+    game.dir = DIRS.RIGHT;
+
+    spawnCrimsonBerry();
+    updateHUD();
+  }
+
+  function updateHUD() {
+    scoreValEl.textContent = game.score;
+    bestValEl.textContent = bestScore;
+    coilValEl.textContent = game.segments.length;
+
+    if (game.combo > 1 && game.comboTimer > 0) {
+      comboPillEl.classList.add('active');
+      comboTextEl.textContent = `x${game.combo} Grove`;
+    } else {
+      comboPillEl.classList.remove('active');
+    }
+  }
+
+  function isCellOccupied(gx, gy) {
+    for (let i = 0; i < game.segments.length; i++) {
+      if (game.segments[i].x === gx && game.segments[i].y === gy) return true;
+    }
+    if (game.crimsonBerry && game.crimsonBerry.x === gx && game.crimsonBerry.y === gy) return true;
+    if (game.specialBerry && game.specialBerry.x === gx && game.specialBerry.y === gy) return true;
+    return false;
+  }
+
+  function getFreeCell() {
+    const free = [];
+    for (let y = 0; y < GRID_ROWS; y++) {
+      for (let x = 0; x < GRID_COLS; x++) {
+        if (!isCellOccupied(x, y)) {
+          free.push({ x, y });
+        }
+      }
+    }
+    if (free.length === 0) return { x: 0, y: 0 };
+    return free[Math.floor(Math.random() * free.length)];
+  }
+
+  function spawnCrimsonBerry() {
+    const pos = getFreeCell();
+    game.crimsonBerry = { x: pos.x, y: pos.y, pulse: 0 };
+  }
+
+  function maybeSpawnSpecialBerry() {
+    if (game.specialBerry) return;
+    if (Math.random() < 0.38) {
+      const pos = getFreeCell();
+      const type = Math.random() < 0.65 ? 'AMBER' : 'DEW';
+      game.specialBerry = {
+        x: pos.x,
+        y: pos.y,
+        type,
+        timer: 7.5,
+        maxTimer: 7.5
+      };
+    }
+  }
+
+  /* =========================================================================
+   * 4. RESPONSIVE CANVAS SIZING & STATIC GROVE RENDERBUFFER
+   * ========================================================================= */
+  function resizeCanvas() {
+    const rect = stageWrap.getBoundingClientRect();
+    const cssW = Math.max(240, Math.floor(rect.width - 12));
+    const cssH = Math.max(280, Math.floor(rect.height - 6));
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+
+    game.viewW = cssW;
+    game.viewH = cssH;
+    game.dpr = dpr;
+
+    canvas.style.width = `${cssW}px`;
+    canvas.style.height = `${cssH}px`;
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Compute largest integer cell size that fits 15x19 plus gnarled root border
+    const pad = 16;
+    const availW = cssW - pad * 2;
+    const availH = cssH - pad * 2;
+    const cell = Math.max(12, Math.floor(Math.min(availW / GRID_COLS, availH / GRID_ROWS)));
+
+    game.cellSize = cell;
+    game.boardW = cell * GRID_COLS;
+    game.boardH = cell * GRID_ROWS;
+    game.boardX = Math.floor((cssW - game.boardW) * 0.5);
+    game.boardY = Math.floor((cssH - game.boardH) * 0.5);
+
+    bakeStaticGroveBuffer();
+  }
+
+  function bakeStaticGroveBuffer() {
+    const { viewW, viewH, dpr, cellSize, boardX, boardY, boardW, boardH } = game;
+    bgBuffer.width = Math.round(viewW * dpr);
+    bgBuffer.height = Math.round(viewH * dpr);
+    bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Deep forest floor base
+    const grad = bgCtx.createRadialGradient(
+      viewW * 0.5, viewH * 0.5, cellSize * 2,
+      viewW * 0.5, viewH * 0.5, Math.max(viewW, viewH) * 0.75
+    );
+    grad.addColorStop(0, '#0f281d');
+    grad.addColorStop(0.65, '#091912');
+    grad.addColorStop(1, '#050e0a');
+    bgCtx.fillStyle = grad;
+    bgCtx.fillRect(0, 0, viewW, viewH);
+
+    // Subtle botanical tiles with stone runes & clover tufts
+    for (let row = 0; row < GRID_ROWS; row++) {
+      for (let col = 0; col < GRID_COLS; col++) {
+        const x = boardX + col * cellSize;
+        const y = boardY + row * cellSize;
+        const isAlt = (row + col) % 2 === 0;
+
+        bgCtx.fillStyle = isAlt ? 'rgba(22, 58, 39, 0.36)' : 'rgba(13, 36, 25, 0.36)';
+        bgCtx.beginPath();
+        bgCtx.roundRect(x + 1, y + 1, cellSize - 2, cellSize - 2, 4);
+        bgCtx.fill();
+
+        // Deterministic decorative moss dots
+        const hash = (row * 31 + col * 17) % 19;
+        if (hash === 0) {
+          bgCtx.fillStyle = 'rgba(115, 230, 140, 0.08)';
+          bgCtx.beginPath();
+          bgCtx.arc(x + cellSize * 0.35, y + cellSize * 0.65, 2, 0, Math.PI * 2);
+          bgCtx.arc(x + cellSize * 0.55, y + cellSize * 0.55, 1.5, 0, Math.PI * 2);
+          bgCtx.fill();
+        } else if (hash === 7) {
+          // Tiny rune ring
+          bgCtx.strokeStyle = 'rgba(255, 212, 112, 0.05)';
+          bgCtx.lineWidth = 1;
+          bgCtx.beginPath();
+          bgCtx.arc(x + cellSize * 0.5, y + cellSize * 0.5, cellSize * 0.25, 0, Math.PI * 2);
+          bgCtx.stroke();
+        }
+      }
+    }
+
+    // Enchanted Orchard Root Frame around the playable grid
+    bgCtx.save();
+    bgCtx.strokeStyle = '#244732';
+    bgCtx.lineWidth = 5;
+    bgCtx.beginPath();
+    bgCtx.roundRect(boardX - 4, boardY - 4, boardW + 8, boardH + 8, 10);
+    bgCtx.stroke();
+
+    bgCtx.strokeStyle = 'rgba(255, 212, 112, 0.32)';
+    bgCtx.lineWidth = 1.2;
+    bgCtx.beginPath();
+    bgCtx.roundRect(boardX - 1.5, boardY - 1.5, boardW + 3, boardH + 3, 7);
+    bgCtx.stroke();
+
+    // Corner gold botanical nodes
+    const corners = [
+      [boardX - 3, boardY - 3],
+      [boardX + boardW + 3, boardY - 3],
+      [boardX - 3, boardY + boardH + 3],
+      [boardX + boardW + 3, boardY + boardH + 3]
+    ];
+    bgCtx.fillStyle = '#ffd470';
+    corners.forEach(([cx, cy]) => {
+      bgCtx.beginPath();
+      bgCtx.arc(cx, cy, 3, 0, Math.PI * 2);
+      bgCtx.fill();
+    });
+    bgCtx.restore();
+  }
+
+  /* =========================================================================
+   * 5. INPUT HANDLING (D-Pad, Swipes, Keyboard)
+   * ========================================================================= */
+  function queueDirection(newDir) {
+    if (game.state === 'START') {
+      startGame();
+    }
+    if (game.state !== 'PLAYING') return;
+
+    const lastScheduled = game.inputQueue.length > 0
+      ? game.inputQueue[game.inputQueue.length - 1]
+      : game.dir;
+
+    // Prevent 180-degree self-reversal or redundant identical turns
+    if (newDir.x === -lastScheduled.x && newDir.y === -lastScheduled.y) return;
+    if (newDir.x === lastScheduled.x && newDir.y === lastScheduled.y) return;
+
+    if (game.inputQueue.length < 2) {
+      game.inputQueue.push(newDir);
+      audio.sfxTurn();
+    }
+  }
+
+  // Keyboard Controls
+  window.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
+    if (key === 'arrowup' || key === 'w') {
+      e.preventDefault();
+      queueDirection(DIRS.UP);
+      highlightDpad('UP');
+    } else if (key === 'arrowdown' || key === 's') {
+      e.preventDefault();
+      queueDirection(DIRS.DOWN);
+      highlightDpad('DOWN');
+    } else if (key === 'arrowleft' || key === 'a') {
+      e.preventDefault();
+      queueDirection(DIRS.LEFT);
+      highlightDpad('LEFT');
+    } else if (key === 'arrowright' || key === 'd') {
+      e.preventDefault();
+      queueDirection(DIRS.RIGHT);
+      highlightDpad('RIGHT');
+    } else if (key === ' ' || key === 'p') {
+      e.preventDefault();
+      if (game.state === 'PLAYING' || game.state === 'PAUSED') {
+        togglePause();
+      } else {
+        startGame();
+      }
+    } else if (key === 'r') {
+      e.preventDefault();
+      startGame(true);
+    } else if (key === 'm') {
+      e.preventDefault();
+      handleMuteToggle();
+    }
+  });
+
+  function highlightDpad(dirName) {
+    const btn = document.querySelector(`.dpad-btn[data-dir="${dirName}"]`);
+    if (!btn) return;
+    btn.classList.add('pressed');
+    setTimeout(() => btn.classList.remove('pressed'), 120);
+  }
+
+  // Thumb D-Pad Buttons
+  document.querySelectorAll('.dpad-btn').forEach(btn => {
+    const dirName = btn.getAttribute('data-dir');
+    const trigger = (e) => {
+      e.preventDefault();
+      audio.init();
+      queueDirection(DIRS[dirName]);
+      highlightDpad(dirName);
+    };
+    btn.addEventListener('pointerdown', trigger);
+  });
+
+  // Canvas Swipe Gesture Recognition
+  let touchStartX = null;
+  let touchStartY = null;
+  const SWIPE_THRESHOLD = 18;
+
+  canvas.addEventListener('pointerdown', (e) => {
+    audio.init();
+    touchStartX = e.clientX;
+    touchStartY = e.clientY;
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (touchStartX === null || touchStartY === null) return;
+    const dx = e.clientX - touchStartX;
+    const dy = e.clientY - touchStartY;
+
+    if (Math.hypot(dx, dy) >= SWIPE_THRESHOLD) {
+      if (Math.abs(dx) > Math.abs(dy)) {
+        queueDirection(dx > 0 ? DIRS.RIGHT : DIRS.LEFT);
+      } else {
+        queueDirection(dy > 0 ? DIRS.DOWN : DIRS.UP);
+      }
+      // Reset anchor for responsive chained swipes without lifting thumb
+      touchStartX = e.clientX;
+      touchStartY = e.clientY;
+    }
+  });
+
+  window.addEventListener('pointerup', () => {
+    touchStartX = null;
+    touchStartY = null;
+  });
+
+  /* =========================================================================
+   * 6. GAME FLOW CONTROLS (Start, Pause, Restart, Game Over)
+   * ========================================================================= */
+  function startGame(forceReset = false) {
+    audio.init();
+    if (game.state === 'PAUSED' && !forceReset) {
+      togglePause();
+      return;
+    }
+    resetGameData();
+    game.state = 'PLAYING';
+    modalOverlay.classList.add('hidden');
+    updatePauseIcons();
+    audio.startMusic();
+  }
+
+  function togglePause() {
+    if (game.state === 'PLAYING') {
+      game.state = 'PAUSED';
+      audio.stopMusic();
+      modalSub.textContent = 'Slumbering Grove';
+      modalTitle.textContent = 'Orchard Paused';
+      modalDesc.textContent = 'The mossy serpent rests beneath the canopy leaves.';
+      modalSummary.style.display = 'none';
+      modalCtaBtn.textContent = 'Resume Harvest';
+      modalOverlay.classList.remove('hidden');
+    } else if (game.state === 'PAUSED') {
+      game.state = 'PLAYING';
+      modalOverlay.classList.add('hidden');
+      audio.startMusic();
+    }
+    updatePauseIcons();
+  }
+
+  function triggerGameOver(reason) {
+    game.state = 'GAMEOVER';
+    game.shakeTime = 0.35;
+    game.shakeIntensity = 7;
+    audio.stopMusic();
+    audio.sfxGameOver();
+
+    if (game.score > bestScore) {
+      bestScore = game.score;
+      try {
+        localStorage.setItem('mosscoil_best_v1', String(bestScore));
+      } catch (e) {}
+    }
+    updateHUD();
+
+    modalSub.textContent = reason;
+    modalTitle.textContent = 'Serpent Entangled';
+    modalDesc.textContent = 'Your floral coils returned to the mossy earth of the orchard.';
+    finalScoreEl.textContent = game.score;
+    finalBestEl.textContent = bestScore;
+    modalSummary.style.display = 'grid';
+    modalCtaBtn.textContent = 'Plant New Serpent';
+    modalOverlay.classList.remove('hidden');
+    updatePauseIcons();
+  }
+
+  function updatePauseIcons() {
+    const isPaused = game.state !== 'PLAYING';
+    pauseIcon.style.display = isPaused ? 'none' : 'block';
+    playIcon.style.display = isPaused ? 'block' : 'none';
+  }
+
+  function handleMuteToggle() {
+    const isMuted = audio.toggleMute();
+    soundOnIcon.style.display = isMuted ? 'none' : 'block';
+    soundOffIcon.style.display = isMuted ? 'block' : 'none';
+  }
+
+  muteBtn.addEventListener('click', handleMuteToggle);
+  pauseBtn.addEventListener('click', () => {
+    if (game.state === 'START' || game.state === 'GAMEOVER') {
+      startGame(true);
+    } else {
+      togglePause();
+    }
+  });
+  restartTopBtn.addEventListener('click', () => startGame(true));
+  modalCtaBtn.addEventListener('click', () => {
+    if (game.state === 'PAUSED') {
+      togglePause();
+    } else {
+      startGame(true);
+    }
+  });
+
+  /* =========================================================================
+   * 7. SIMULATION & PARTICLE EFFECTS
+   * ========================================================================= */
+  function spawnBerryBurst(gx, gy, color, count = 16) {
+    const cx = game.boardX + (gx + 0.5) * game.cellSize;
+    const cy = game.boardY + (gy + 0.5) * game.cellSize;
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4;
+      const speed = 35 + Math.random() * 85;
+      game.particles.push({
+        x: cx,
+        y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        r: 2 + Math.random() * 3.5,
+        color,
+        life: 0.55 + Math.random() * 0.35,
+        maxLife: 0.9
+      });
+    }
+  }
+
+  function spawnFloatingText(gx, gy, text, color) {
+    const cx = game.boardX + (gx + 0.5) * game.cellSize;
+    const cy = game.boardY + gy * game.cellSize;
+    game.floatingTexts.push({
+      x: cx,
+      y: cy,
+      text,
+      color,
+      life: 0.95,
+      maxLife: 0.95
+    });
+  }
+
+  function getStepInterval() {
+    // Speed scales gently with snake length; Moon-Dew berry slows time
+    const lenBonus = Math.min(40, game.segments.length - 4) * 0.0014;
+    let interval = Math.max(0.082, game.baseInterval - lenBonus);
+    if (game.slowTimer > 0) {
+      interval *= 1.38;
+    }
+    return interval;
+  }
+
+  function advanceSnakeStep() {
+    if (game.inputQueue.length > 0) {
+      game.dir = game.inputQueue.shift();
+    }
+
+    const head = game.segments[0];
+    const nextX = head.x + game.dir.x;
+    const nextY = head.y + game.dir.y;
+
+    // 1. Check Root Wall Collision
+    if (nextX < 0 || nextX >= GRID_COLS || nextY < 0 || nextY >= GRID_ROWS) {
+      spawnBerryBurst(head.x, head.y, '#ff4d6d', 24);
+      triggerGameOver('Boundary Roots Struck');
+      return;
+    }
+
+    // 2. Check Self-Coil Collision (ignore tail tip if it's moving away this tick)
+    const willGrow = (nextX === game.crimsonBerry.x && nextY === game.crimsonBerry.y) ||
+                     (game.specialBerry && nextX === game.specialBerry.x && nextY === game.specialBerry.y) ||
+                     game.growPending > 0;
+
+    const checkLimit = willGrow ? game.segments.length : game.segments.length - 1;
+    for (let i = 0; i < checkLimit; i++) {
+      if (game.segments[i].x === nextX && game.segments[i].y === nextY) {
+        spawnBerryBurst(nextX, nextY, '#ff4d6d', 24);
+        triggerGameOver('Coils Entangled');
+        return;
+      }
+    }
+
+    // Save snapshot for smooth interpolation
+    game.prevSegments = game.segments.map(s => ({ ...s }));
+
+    // Insert new head
+    const flowerHues = [340, 45, 185, 280];
+    const newSegment = {
+      x: nextX,
+      y: nextY,
+      flowerHue: flowerHues[game.segments.length % flowerHues.length]
+    };
+    game.segments.unshift(newSegment);
+
+    if (game.growPending > 0) {
+      game.growPending--;
+      // Duplicate tail in prevSegments so length matches for interpolation
+      game.prevSegments.push({ ...game.prevSegments[game.prevSegments.length - 1] });
+    } else {
+      game.segments.pop();
+    }
+
+    // 3. Check Crimson Heartberry Harvest
+    if (nextX === game.crimsonBerry.x && nextY === game.crimsonBerry.y) {
+      game.growPending += 1;
+      if (game.comboTimer > 0) {
+        game.combo = Math.min(8, game.combo + 1);
+      } else {
+        game.combo = 1;
+      }
+      game.comboTimer = 4.2;
+
+      const pts = 10 * game.combo;
+      game.score += pts;
+      audio.sfxEatCrimson(game.combo);
+      spawnBerryBurst(nextX, nextY, '#ff4d6d', 18);
+      spawnFloatingText(nextX, nextY, `+${pts}`, '#ffd470');
+
+      spawnCrimsonBerry();
+      maybeSpawnSpecialBerry();
+      updateHUD();
+    }
+
+    // 4. Check Special Berry Harvest
+    if (game.specialBerry && nextX === game.specialBerry.x && nextY === game.specialBerry.y) {
+      if (game.specialBerry.type === 'AMBER') {
+        game.growPending += 1;
+        game.combo = Math.min(8, game.combo + 1);
+        game.comboTimer = 5.0;
+        const pts = 30 * game.combo;
+        game.score += pts;
+        audio.sfxEatGold();
+        spawnBerryBurst(nextX, nextY, '#ffaa33', 24);
+        spawnFloatingText(nextX, nextY, `+${pts} SUN`, '#ffaa33');
+      } else {
+        // Moon-Dew Berry: calms speed & grants bonus
+        game.slowTimer = 6.5;
+        const pts = 25 * game.combo;
+        game.score += pts;
+        audio.sfxEatDew();
+        spawnBerryBurst(nextX, nextY, '#5ce1e6', 22);
+        spawnFloatingText(nextX, nextY, `MOON DEW`, '#5ce1e6');
+      }
+      game.specialBerry = null;
+      updateHUD();
+    }
+  }
+
+  function updateSimulation(dt) {
+    // Update ambient fireflies even on title/pause screens
+    for (let i = 0; i < game.fireflies.length; i++) {
+      const f = game.fireflies[i];
+      f.x += f.vx * dt;
+      f.y += f.vy * dt;
+      f.phase += f.speed * dt;
+      if (f.x < 0.02 || f.x > 0.98) f.vx *= -1;
+      if (f.y < 0.02 || f.y > 0.98) f.vy *= -1;
+    }
+
+    if (game.shakeTime > 0) {
+      game.shakeTime = Math.max(0, game.shakeTime - dt);
+    }
+
+    // Update particles
+    for (let i = game.particles.length - 1; i >= 0; i--) {
+      const p = game.particles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= 0.94;
+      p.vy *= 0.94;
+      p.life -= dt;
+      if (p.life <= 0) game.particles.splice(i, 1);
+    }
+
+    // Update floating score texts
+    for (let i = game.floatingTexts.length - 1; i >= 0; i--) {
+      const ft = game.floatingTexts[i];
+      ft.y -= 24 * dt;
+      ft.life -= dt;
+      if (ft.life <= 0) game.floatingTexts.splice(i, 1);
+    }
+
+    if (game.state !== 'PLAYING') return;
+
+    // Timers
+    if (game.comboTimer > 0) {
+      game.comboTimer -= dt;
+      if (game.comboTimer <= 0) {
+        game.combo = 1;
+        updateHUD();
+      }
+    }
+
+    if (game.slowTimer > 0) {
+      game.slowTimer = Math.max(0, game.slowTimer - dt);
+    }
+
+    if (game.specialBerry) {
+      game.specialBerry.timer -= dt;
+      if (game.specialBerry.timer <= 0) {
+        game.specialBerry = null;
+      }
+    }
+
+    // Advance snake movement
+    const interval = getStepInterval();
+    game.stepProgress += dt / interval;
+    while (game.stepProgress >= 1 && game.state === 'PLAYING') {
+      game.stepProgress -= 1;
+      advanceSnakeStep();
+    }
+  }
+
+  /* =========================================================================
+   * 8. LAYERED BOTANICAL RENDERER
+   * ========================================================================= */
+  function getInterpolatedPoints(alpha) {
+    const pts = [];
+    const { boardX, boardY, cellSize, segments, prevSegments } = game;
+    for (let i = 0; i < segments.length; i++) {
+      const cur = segments[i];
+      const prev = prevSegments[i] || cur;
+      const gx = prev.x + (cur.x - prev.x) * alpha;
+      const gy = prev.y + (cur.y - prev.y) * alpha;
+      pts.push({
+        x: boardX + (gx + 0.5) * cellSize,
+        y: boardY + (gy + 0.5) * cellSize,
+        flowerHue: cur.flowerHue
+      });
+    }
+    return pts;
+  }
+
+  function drawGlowingBerry(cx, cy, radius, coreColor, glowColor, time, timerRatio = null) {
+    ctx.save();
+    const pulse = 1 + Math.sin(time * 5) * 0.1;
+    const r = radius * pulse;
+
+    // Outer Aura
+    const grad = ctx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r * 2.4);
+    grad.addColorStop(0, glowColor);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 2.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Small Crown Leaf on top of berry
+    ctx.fillStyle = '#73e68c';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - r * 0.85, r * 0.45, r * 0.22, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Berry Body
+    ctx.fillStyle = coreColor;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Specular highlight
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    ctx.beginPath();
+    ctx.arc(cx - r * 0.3, cy - r * 0.3, r * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Expiring ring for special berries
+    if (timerRatio !== null) {
+      ctx.strokeStyle = coreColor;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 1.45, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * timerRatio);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawMossSerpent(time) {
+    const alpha = game.state === 'PLAYING' ? game.stepProgress : 1;
+    const pts = getInterpolatedPoints(alpha);
+    if (pts.length === 0) return;
+
+    const { cellSize } = game;
+
+    ctx.save();
+
+    // 1. Soft shadow beneath serpent
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(2, 8, 5, 0.65)';
+    ctx.lineWidth = cellSize * 0.78;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y + 3);
+    for (let i = 1; i < pts.length; i++) {
+      ctx.lineTo(pts[i].x, pts[i].y + 3);
+    }
+    ctx.stroke();
+
+    // 2. Sculpted Moss Segments (Drawn tail-to-head so head overlaps cleanly)
+    for (let i = pts.length - 1; i >= 0; i--) {
+      const p = pts[i];
+      const t = i / Math.max(1, pts.length - 1); // 0 at head, 1 at tail
+      const segRadius = cellSize * (0.44 * (1 - t * 0.48));
+
+      // Outer dark moss rim
+      ctx.fillStyle = '#18472a';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, segRadius * 1.08, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Inner velvety moss gradient
+      const isSlowed = game.slowTimer > 0;
+      ctx.fillStyle = isSlowed
+        ? (i % 2 === 0 ? '#48b8c2' : '#2e8894')
+        : (i % 2 === 0 ? '#49ad68' : '#388e53');
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, segRadius * 0.92, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Dorsal ridge scale highlight & tiny blossoms along the body
+      if (i > 0 && i < pts.length - 1) {
+        ctx.fillStyle = 'rgba(162, 245, 181, 0.35)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y - segRadius * 0.2, segRadius * 0.38, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Sprout tiny glowing orchard flowers on every 3rd coil
+        if (i % 3 === 0) {
+          const prev = pts[i - 1];
+          const angle = Math.atan2(prev.y - p.y, prev.x - p.x);
+          const sideX = p.x + Math.cos(angle + Math.PI * 0.5) * (segRadius * 0.85);
+          const sideY = p.y + Math.sin(angle + Math.PI * 0.5) * (segRadius * 0.85);
+
+          ctx.fillStyle = `hsl(${p.flowerHue}, 90%, 72%)`;
+          ctx.beginPath();
+          ctx.arc(sideX, sideY, Math.max(2, cellSize * 0.13), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    // 3. Detailed Serpent Head & Leaf Horns
+    const head = pts[0];
+    const neck = pts[1] || { x: head.x - game.dir.x, y: head.y - game.dir.y };
+    const headAngle = Math.atan2(head.y - neck.y, head.x - neck.x);
+    const headR = cellSize * 0.48;
+
+    ctx.save();
+    ctx.translate(head.x, head.y);
+    ctx.rotate(headAngle);
+
+    //Flickering Berry-Scent Tongue
+    const distToBerry = Math.hypot(
+      (game.boardX + (game.crimsonBerry.x + 0.5) * cellSize) - head.x,
+      (game.boardY + (game.crimsonBerry.y + 0.5) * cellSize) - head.y
+    );
+    if (distToBerry < cellSize * 4.5 || Math.sin(time * 9) > 0.5) {
+      const tongueLen = headR * (1.35 + Math.sin(time * 22) * 0.2);
+      ctx.strokeStyle = '#ff5c7c';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(headR * 0.7, 0);
+      ctx.lineTo(tongueLen, 0);
+      ctx.lineTo(tongueLen + 3.5, -3);
+      ctx.moveTo(tongueLen, 0);
+      ctx.lineTo(tongueLen + 3.5, 3);
+      ctx.stroke();
+    }
+
+    // Swept Botanical Leaf Horns
+    ctx.fillStyle = '#73e68c';
+    [-1, 1].forEach(side => {
+      ctx.beginPath();
+      ctx.ellipse(-headR * 0.25, side * headR * 0.68, headR * 0.55, headR * 0.22, side * -0.45, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Sculpted Snout
+    ctx.fillStyle = '#4ebb6f';
+    ctx.beginPath();
+    ctx.ellipse(headR * 0.1, 0, headR * 1.05, headR * 0.88, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Golden Crown Crest
+    ctx.fillStyle = '#ffd470';
+    ctx.beginPath();
+    ctx.moveTo(-headR * 0.2, 0);
+    ctx.lineTo(headR * 0.2, -headR * 0.28);
+    ctx.lineTo(headR * 0.45, 0);
+    ctx.lineTo(headR * 0.2, headR * 0.28);
+    ctx.closePath();
+    ctx.fill();
+
+    // Luminous Amber Eyes
+    [-1, 1].forEach(side => {
+      const ex = headR * 0.32;
+      const ey = side * headR * 0.48;
+      ctx.fillStyle = '#ffe17d';
+      ctx.beginPath();
+      ctx.arc(ex, ey, headR * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#07140d';
+      ctx.beginPath();
+      ctx.arc(ex + 1, ey, headR * 0.1, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    ctx.restore();
+    ctx.restore();
+  }
+
+  function drawCanopyForeground(time) {
+    const { viewW, viewH } = game;
+    ctx.save();
+    const corners = [
+      { x: 0, y: 0, sx: 1, sy: 1 },
+      { x: viewW, y: 0, sx: -1, sy: 1 },
+      { x: 0, y: viewH, sx: 1, sy: -1 },
+      { x: viewW, y: viewH, sx: -1, sy: -1 }
+    ];
+
+    corners.forEach((c, idx) => {
+      const sway = Math.sin(time * 1.6 + idx * 1.3) * 0.06;
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.scale(c.sx, c.sy);
+      ctx.rotate(sway);
+
+      ctx.fillStyle = 'rgba(12, 36, 24, 0.72)';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(38, 8, 52, 28);
+      ctx.quadraticCurveTo(22, 34, 0, 18);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(26, 70, 45, 0.55)';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(14, 34, 24, 52);
+      ctx.quadraticCurveTo(4, 38, 0, 0);
+      ctx.fill();
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+
+  function renderScene(time) {
+    const { viewW, viewH, boardX, boardY, cellSize } = game;
+
+    ctx.save();
+
+    // Screen shake on collision
+    if (game.shakeTime > 0) {
+      const mag = game.shakeIntensity * (game.shakeTime / 0.35);
+      ctx.translate((Math.random() - 0.5) * mag, (Math.random() - 0.5) * mag);
+    }
+
+    // 1. Draw pre-rendered Grove Board Buffer
+    ctx.drawImage(bgBuffer, 0, 0, viewW, viewH);
+
+    // 2. Moon-Dew Slow Aura tint when active
+    if (game.slowTimer > 0) {
+      ctx.fillStyle = `rgba(92, 225, 230, ${0.06 + Math.sin(time * 6) * 0.02})`;
+      ctx.fillRect(boardX, boardY, game.boardW, game.boardH);
+    }
+
+    // 3. Draw Crimson Heartberry
+    if (game.crimsonBerry) {
+      const bx = boardX + (game.crimsonBerry.x + 0.5) * cellSize;
+      const by = boardY + (game.crimsonBerry.y + 0.5) * cellSize;
+      drawGlowingBerry(bx, by, cellSize * 0.36, '#ff4d6d', 'rgba(255, 77, 109, 0.45)', time);
+    }
+
+    // 4. Draw Special Berry (Sunburst Amber or Moon-Dew)
+    if (game.specialBerry) {
+      const sb = game.specialBerry;
+      const bx = boardX + (sb.x + 0.5) * cellSize;
+      const by = boardY + (sb.y + 0.5) * cellSize;
+      const ratio = Math.max(0, sb.timer / sb.maxTimer);
+      if (sb.type === 'AMBER') {
+        drawGlowingBerry(bx, by, cellSize * 0.39, '#ffaa33', 'rgba(255, 170, 51, 0.5)', time * 1.4, ratio);
+      } else {
+        drawGlowingBerry(bx, by, cellSize * 0.39, '#5ce1e6', 'rgba(92, 225, 230, 0.5)', time * 1.2, ratio);
+      }
+    }
+
+    // 5. Draw Moss Serpent
+    drawMossSerpent(time);
+
+    // 6. Draw Burst Particles
+    for (let i = 0; i < game.particles.length; i++) {
+      const p = game.particles[i];
+      const alpha = Math.max(0, p.life / p.maxLife);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * alpha, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // 7. Draw Floating Harvest Popups
+    ctx.font = 'bold 13px Georgia, serif';
+    ctx.textAlign = 'center';
+    for (let i = 0; i < game.floatingTexts.length; i++) {
+      const ft = game.floatingTexts[i];
+      const alpha = Math.max(0, ft.life / ft.maxLife);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = ft.color;
+      ctx.fillText(ft.text, ft.x, ft.y);
+    }
+    ctx.globalAlpha = 1;
+
+    // 8. Draw Drifting Orchard Fireflies
+    for (let i = 0; i < game.fireflies.length; i++) {
+      const f = game.fireflies[i];
+      const fx = f.x * viewW;
+      const fy = f.y * viewH;
+      const glow = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(f.phase));
+      ctx.fillStyle = `rgba(255, 224, 130, ${glow * 0.65})`;
+      ctx.beginPath();
+      ctx.arc(fx, fy, f.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 9. Foreground Swaying Canopy Corners
+    drawCanopyForeground(time);
+
+    ctx.restore();
+  }
+
+  /* =========================================================================
+   * 9. MAIN ANIMATION LOOP & BOOTSTRAP
+   * ========================================================================= */
+  let lastFrameTime = performance.now();
+
+  function frameLoop(now) {
+    const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+    lastFrameTime = now;
+
+    updateSimulation(dt);
+    renderScene(now / 1000);
+
+    requestAnimationFrame(frameLoop);
+  }
+
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+  });
+
+  window.onload = () => {
+    initAmbientEntities();
+    resetGameData();
+    resizeCanvas();
+    requestAnimationFrame(frameLoop);
+  };
+})();
+</script>
+</body>
+</html>
